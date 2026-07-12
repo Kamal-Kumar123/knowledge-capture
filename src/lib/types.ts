@@ -4,6 +4,7 @@ export interface Document {
   content: string
   createdAt: number
   updatedAt: number
+  googleDocId?: string
 }
 
 export interface AppState {

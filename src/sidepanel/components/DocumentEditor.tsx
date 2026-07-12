@@ -11,12 +11,14 @@ export function DocumentEditor({ document }: DocumentEditorProps) {
   const [draft, setDraft] = useState<string | null>(null)
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const lastExternalUpdate = useRef(document.updatedAt)
+  const editBaseUpdatedAt = useRef(document.updatedAt)
 
   const content = draft ?? document.content
 
   useEffect(() => {
     if (document.updatedAt !== lastExternalUpdate.current) {
       lastExternalUpdate.current = document.updatedAt
+      editBaseUpdatedAt.current = document.updatedAt
       if (saveTimer.current) {
         clearTimeout(saveTimer.current)
         saveTimer.current = null
@@ -26,19 +28,29 @@ export function DocumentEditor({ document }: DocumentEditorProps) {
   }, [document.content, document.updatedAt])
 
   const persistContent = useCallback(
-    (value: string) => {
+    (value: string, expectedUpdatedAt: number) => {
       if (saveTimer.current) clearTimeout(saveTimer.current)
-      saveTimer.current = setTimeout(() => {
-        updateDocumentContent(document.id, value)
+      saveTimer.current = setTimeout(async () => {
+        const { saved } = await updateDocumentContent(
+          document.id,
+          value,
+          expectedUpdatedAt,
+        )
         setDraft(null)
+        if (!saved) {
+          editBaseUpdatedAt.current = lastExternalUpdate.current
+        }
       }, 500)
     },
     [document.id],
   )
 
   const handleChange = (value: string) => {
+    if (draft === null) {
+      editBaseUpdatedAt.current = document.updatedAt
+    }
     setDraft(value)
-    persistContent(value)
+    persistContent(value, editBaseUpdatedAt.current)
   }
 
   const handleExport = () => {

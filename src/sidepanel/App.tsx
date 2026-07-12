@@ -8,6 +8,7 @@ import {
 } from '../lib/storage'
 import { useAppState } from '../lib/useAppState'
 import { DocumentEditor } from './components/DocumentEditor'
+import { GoogleDocsSettings } from './components/GoogleDocsSettings'
 import { NotebookDialog } from './components/NotebookDialog'
 import { NotebookDropdown } from './components/NotebookDropdown'
 import { Toggle } from './components/Toggle'
@@ -173,6 +174,11 @@ export default function App() {
               </button>
             </div>
           </section>
+
+          <GoogleDocsSettings
+            activeDocument={activeDocument}
+            onError={handleError}
+          />
         </main>
       )}
 

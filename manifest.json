@@ -3,7 +3,16 @@
   "name": "Knowledge Capture",
   "version": "1.0.0",
   "description": "Capture selected text from any webpage into organized notebooks.",
-  "permissions": ["storage", "sidePanel", "unlimitedStorage"],
+  "permissions": ["storage", "sidePanel", "unlimitedStorage", "scripting", "tabs", "identity", "identity.email"],
+  "host_permissions": ["<all_urls>", "https://www.googleapis.com/*"],
+  "oauth2": {
+    "client_id": "884860362026-30gkl7ulj6qdmlh6pk4ptalt1u7omqb1.apps.googleusercontent.com",
+    "scopes": [
+      "https://www.googleapis.com/auth/documents",
+      "https://www.googleapis.com/auth/drive.file",
+      "https://www.googleapis.com/auth/userinfo.email"
+    ]
+  },
   "action": {
     "default_title": "Open Knowledge Capture"
   },

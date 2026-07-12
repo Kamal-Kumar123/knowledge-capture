@@ -197,15 +197,31 @@ export async function deleteDocument(
 export async function updateDocumentContent(
   documentId: string,
   content: string,
-): Promise<AppState> {
-  const state = await getState()
-  const document = state.documents.find((d) => d.id === documentId)
-  if (!document) throw new Error('Document not found')
+  expectedUpdatedAt: number,
+): Promise<{ state: AppState; saved: boolean }> {
+  const result = await chrome.storage.local.get(STORAGE_KEY)
+  const raw = result[STORAGE_KEY] as LegacyAppState | undefined
+  if (!raw) throw new Error('No state found')
 
-  document.content = content
-  document.updatedAt = Date.now()
-  await saveState(state)
-  return state
+  const state = migrateState(raw)
+  const doc = state.documents.find((d) => d.id === documentId)
+  if (!doc) throw new Error('Document not found')
+
+  // Skip save if a capture updated the document while user was typing
+  if (doc.updatedAt !== expectedUpdatedAt) {
+    return { state, saved: false }
+  }
+
+  const now = Date.now()
+  const updatedState: AppState = {
+    ...state,
+    documents: state.documents.map((d) =>
+      d.id === documentId ? { ...d, content, updatedAt: now } : d,
+    ),
+  }
+
+  await chrome.storage.local.set({ [STORAGE_KEY]: updatedState })
+  return { state: updatedState, saved: true }
 }
 
 export async function appendToDocument(

@@ -46,6 +46,7 @@ export function ContentApp() {
   const [selectedText, setSelectedText] = useState('')
   const [editText, setEditText] = useState('')
   const [toastMessage, setToastMessage] = useState('')
+  const [toastType, setToastType] = useState<'success' | 'error'>('success')
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const dismiss = useCallback(() => {
@@ -53,31 +54,47 @@ export function ContentApp() {
     setSelectedText('')
   }, [])
 
-  const showToast = useCallback((message: string) => {
-    if (toastTimer.current) clearTimeout(toastTimer.current)
-    setToastMessage(message)
-    setView('toast')
-    toastTimer.current = setTimeout(() => {
-      setView('hidden')
-      setToastMessage('')
-    }, 2500)
-  }, [])
+  const showToast = useCallback(
+    (message: string, type: 'success' | 'error' = 'success') => {
+      if (toastTimer.current) clearTimeout(toastTimer.current)
+      setToastMessage(message)
+      setToastType(type)
+      setView('toast')
+      const duration = type === 'error' ? 3500 : 2500
+      toastTimer.current = setTimeout(() => {
+        if (type === 'error') {
+          setView('popup')
+        } else {
+          setView('hidden')
+          setToastMessage('')
+        }
+      }, duration)
+    },
+    [],
+  )
 
   const handleSave = useCallback(
     async (text: string) => {
       try {
-        const { documentName } = await saveEntry(
+        const { documentName, state } = await saveEntry(
           text,
           document.title,
           window.location.href,
         )
         window.getSelection()?.removeAllRanges()
-        showToast(`Saved to ${documentName}`)
-      } catch {
-        dismiss()
+        showToast(`Saved to ${documentName}`, 'success')
+        chrome.runtime.sendMessage({
+          type: 'APPEND_GOOGLE_DOC',
+          documentId: state.activeDocumentId,
+          text: text.trim(),
+        })
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : 'Save failed. Please try again.'
+        showToast(message, 'error')
       }
     },
-    [dismiss, showToast],
+    [showToast],
   )
 
   useEffect(() => {
@@ -161,7 +178,9 @@ export function ContentApp() {
           onCancel={() => setView('popup')}
         />
       )}
-      {view === 'toast' && <Toast message={toastMessage} />}
+      {view === 'toast' && (
+        <Toast message={toastMessage} type={toastType} />
+      )}
     </>
   )
 }
