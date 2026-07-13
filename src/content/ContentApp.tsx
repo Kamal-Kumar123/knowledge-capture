@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { formatCapture } from '../lib/formatCapture'
 import { saveEntry } from '../lib/storage'
 import { useAppState } from '../lib/useAppState'
+import { getSelectionContent } from './getSelectionContent'
 import { EditModal } from './components/EditModal'
 import { SelectionPopup } from './components/SelectionPopup'
 import { Toast } from './components/Toast'
@@ -34,8 +36,7 @@ function getSelectionPosition(): { top: number; left: number } | null {
 }
 
 function getSelectedText(): string {
-  const selection = window.getSelection()
-  return selection?.toString().trim() ?? ''
+  return getSelectionContent()?.text ?? ''
 }
 
 export function ContentApp() {
@@ -44,6 +45,7 @@ export function ContentApp() {
   const [view, setView] = useState<View>('hidden')
   const [position, setPosition] = useState({ top: 0, left: 0 })
   const [selectedText, setSelectedText] = useState('')
+  const [selectedHtml, setSelectedHtml] = useState<string | null>(null)
   const [editText, setEditText] = useState('')
   const [toastMessage, setToastMessage] = useState('')
   const [toastType, setToastType] = useState<'success' | 'error'>('success')
@@ -52,6 +54,7 @@ export function ContentApp() {
   const dismiss = useCallback(() => {
     setView('hidden')
     setSelectedText('')
+    setSelectedHtml(null)
   }, [])
 
   const showToast = useCallback(
@@ -74,10 +77,11 @@ export function ContentApp() {
   )
 
   const handleSave = useCallback(
-    async (text: string) => {
+    async (text: string, html?: string | null) => {
       try {
+        const formatted = formatCapture(html ?? selectedHtml, text)
         const { documentName, state } = await saveEntry(
-          text,
+          formatted,
           document.title,
           window.location.href,
         )
@@ -86,7 +90,7 @@ export function ContentApp() {
         chrome.runtime.sendMessage({
           type: 'APPEND_GOOGLE_DOC',
           documentId: state.activeDocumentId,
-          text: text.trim(),
+          text: formatted.trim(),
         })
       } catch (err) {
         const message =
@@ -94,7 +98,7 @@ export function ContentApp() {
         showToast(message, 'error')
       }
     },
-    [showToast],
+    [selectedHtml, showToast],
   )
 
   useEffect(() => {
@@ -107,8 +111,8 @@ export function ContentApp() {
       if (!enabledRef.current) return
 
       requestAnimationFrame(() => {
-        const text = getSelectedText()
-        if (!text) {
+        const selection = getSelectionContent()
+        if (!selection) {
           dismiss()
           return
         }
@@ -116,7 +120,8 @@ export function ContentApp() {
         const pos = getSelectionPosition()
         if (!pos) return
 
-        setSelectedText(text)
+        setSelectedText(selection.text)
+        setSelectedHtml(selection.html)
         setPosition(pos)
         setView('popup')
       })
@@ -164,10 +169,10 @@ export function ContentApp() {
         <SelectionPopup
           position={position}
           onEdit={() => {
-            setEditText(selectedText)
+            setEditText(formatCapture(selectedHtml, selectedText))
             setView('edit')
           }}
-          onSave={() => handleSave(selectedText)}
+          onSave={() => handleSave(selectedText, selectedHtml)}
           onCancel={dismiss}
         />
       )}

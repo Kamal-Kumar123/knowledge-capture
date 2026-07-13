@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { updateDocumentContent } from '../../lib/storage'
 import type { Document } from '../../lib/types'
 import { downloadAsDocx } from '../../lib/docx'
+import { FormattedDocumentView } from './FormattedDocumentView'
 
 interface DocumentEditorProps {
   document: Document
@@ -9,6 +10,7 @@ interface DocumentEditorProps {
 
 export function DocumentEditor({ document }: DocumentEditorProps) {
   const [draft, setDraft] = useState<string | null>(null)
+  const [editMode, setEditMode] = useState(false)
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const lastExternalUpdate = useRef(document.updatedAt)
   const editBaseUpdatedAt = useRef(document.updatedAt)
@@ -78,28 +80,39 @@ export function DocumentEditor({ document }: DocumentEditorProps) {
             {wordCount} {wordCount === 1 ? 'word' : 'words'}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={handleExport}
-          className="shrink-0 rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-200 transition-colors hover:border-violet-600/50 hover:bg-violet-600/10 hover:text-white"
-        >
-          ⬇ .docx
-        </button>
+        <div className="flex shrink-0 items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setEditMode((value) => !value)}
+            className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-200 transition-colors hover:border-blue-600/50 hover:bg-blue-600/10 hover:text-white"
+          >
+            {editMode ? 'Preview' : 'Edit'}
+          </button>
+          <button
+            type="button"
+            onClick={handleExport}
+            className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-200 transition-colors hover:border-violet-600/50 hover:bg-violet-600/10 hover:text-white"
+          >
+            ⬇ .docx
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto bg-slate-800/50 p-4">
         <div className="mx-auto min-h-full max-w-none rounded-sm bg-white shadow-xl">
-          <textarea
-            value={content}
-            onChange={(e) => handleChange(e.target.value)}
-            placeholder={
-              content.trim()
-                ? undefined
-                : 'Select text on any webpage and click Save, or start typing here...'
-            }
-            className="min-h-[calc(100vh-220px)] w-full resize-none bg-white px-8 py-10 text-[15px] leading-[1.75] text-gray-900 outline-none placeholder:text-gray-300"
-            spellCheck
-          />
+          {editMode ? (
+            <textarea
+              value={content}
+              onChange={(e) => handleChange(e.target.value)}
+              placeholder="Start typing or capture text from a webpage..."
+              className="min-h-[calc(100vh-220px)] w-full resize-none bg-white px-8 py-10 text-[15px] leading-[1.75] text-gray-900 outline-none placeholder:text-gray-300"
+              spellCheck
+            />
+          ) : (
+            <div className="min-h-[calc(100vh-220px)] px-8 py-10">
+              <FormattedDocumentView content={content} />
+            </div>
+          )}
         </div>
       </div>
     </div>
