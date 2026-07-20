@@ -7,8 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "preview": "vite preview",
-    "postbuild": "node scripts/generate-icons.mjs"
+    "preview": "vite preview"
   },
   "dependencies": {
     "docx": "^9.7.1",

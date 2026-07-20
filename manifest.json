@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Knowledge Capture",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Capture selected text from any webpage into organized notebooks.",
   "permissions": ["storage", "sidePanel", "unlimitedStorage", "scripting", "tabs", "identity", "identity.email"],
   "host_permissions": ["<all_urls>", "https://www.googleapis.com/*"],
